@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Security.Principal;
+using System.Text.RegularExpressions;
 
 void RelaunchIfNotAdmin() {
     if (!RunningAsAdmin()) {
@@ -30,8 +31,9 @@ bool RunningAsAdmin() {
 bool hasPatched;
 
 void ReplacePatched(ref string js, string id, string old, string now) {
-    if (js.Contains(old)) {
-        js = js.Replace(old, now);
+    var regex = new Regex(old);
+    if (regex.IsMatch(js)) {
+        js = regex.Replace(js, now);
         Console.WriteLine($"[{id}]Patched*{old}*->*{now}*完成");
         hasPatched = true;
     }
@@ -65,22 +67,24 @@ async Task PatchedPlugins(params string[] dirs) {
         hasPatched = false;
         switch (dir) {
             case com_cutterman_cutterman_panel:
-                ReplacePatched(ref js, com_cutterman_cutterman_panel, "panelState:Om.Login", "panelState:Om.Preview");
+                ReplacePatched(ref js, com_cutterman_cutterman_panel, "panelState:(\\w+)\\.Login", "panelState:$1.Preview");
                 break;
             case com_cutterman_cleaner:
-                ReplacePatched(ref js, com_cutterman_cleaner, "panelState:Xc.Login", "panelState:Xc.Main");
+                ReplacePatched(ref js, com_cutterman_cleaner, "panelState:(\\w+)\\.Login", "panelState:$1.Main");
                 ReplacePatched(ref js, com_cutterman_cleaner, "user:this.state.user", "user:\"\"");
                 break;
             case com_cutterman_parker_panel:
-                ReplacePatched(ref js, com_cutterman_parker_panel, "panelState:Zg.Login", "panelState:Zg.Preview");
+                ReplacePatched(ref js, com_cutterman_parker_panel, "panelState:(\\w+)\\.Login", "panelState:$1.Preview");
                 break;
             case com_cutterman_layer_panel:
-                ReplacePatched(ref js, com_cutterman_layer_panel, "panelState:Fg.login", "panelState:Fg.index");
+                ReplacePatched(ref js, com_cutterman_layer_panel, "panelState:(\\w+)\\.login", "panelState:$1.index");
                 break;
             case GuideMe:
                 ReplacePatched(ref js, GuideMe, "_this.isLogin = false;", "_this.isLogin = true;");
                 break;
         }
+
+        Console.WriteLine(Environment.NewLine);
 
         if (hasPatched) {
             await File.WriteAllTextAsync(panelJs, js);
@@ -91,7 +95,7 @@ async Task PatchedPlugins(params string[] dirs) {
 
 
 RelaunchIfNotAdmin();
-Console.WriteLine("CuttermanKiller v1.0 by binaryinject");
+Console.WriteLine("CuttermanKiller v1.0 by BinaryInject");
 await PatchedPlugins(com_cutterman_cutterman_panel, com_cutterman_cleaner, com_cutterman_parker_panel,
     com_cutterman_layer_panel, GuideMe);
 Console.WriteLine("完成全部任务任意键关闭");
